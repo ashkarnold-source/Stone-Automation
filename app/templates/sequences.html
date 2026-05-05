@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Sequences — Stone{% endblock %}
+{% block page_title %}Outreach Sequences{% endblock %}
+
+{% block content %}
+
+<div class="row g-3">
+  <!-- Create new -->
+  <div class="col-md-4">
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.875rem;">New Sequence</div>
+      <form method="post" action="/sequences/create">
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Name</label>
+          <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. Independent Agency — 5-touch" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Description</label>
+          <textarea name="description" class="form-control form-control-sm" rows="2" placeholder="Target: independent agencies $5M+…"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">Create</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="col-md-8">
+    {% if sequences %}
+      {% for seq in sequences %}
+      <div class="stone-card mb-2">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <a href="/sequences/{{ seq.id }}" style="font-weight:600; color:#0f172a; text-decoration:none; font-size:0.95rem;">
+              {{ seq.name }}
+            </a>
+            {% if seq.description %}
+            <div style="font-size:0.8rem; color:#64748b;">{{ seq.description }}</div>
+            {% endif %}
+            <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">
+              {{ seq.steps|length }} steps
+            </div>
+          </div>
+          <div class="d-flex gap-1 align-items-center">
+            {% if seq.is_active %}
+            <span class="badge bg-success" style="font-size:0.7rem;">Active</span>
+            {% else %}
+            <span class="badge bg-secondary" style="font-size:0.7rem;">Paused</span>
+            {% endif %}
+            <a href="/sequences/{{ seq.id }}" class="btn btn-sm btn-outline-secondary py-0" style="font-size:0.72rem;">Edit</a>
+          </div>
+        </div>
+
+        {% if seq.steps %}
+        <div class="d-flex gap-1 mt-2 flex-wrap">
+          {% for step in seq.steps %}
+          <div style="background:#f1f5f9; border-radius:6px; padding:3px 8px; font-size:0.72rem;">
+            <span class="status-badge channel-{{ step.channel }}" style="font-size:0.65rem; margin-right:3px;">{{ step.channel }}</span>
+            Day +{{ step.delay_days }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="stone-card text-center py-5" style="color:#94a3b8;">
+        <i class="bi bi-arrow-repeat" style="font-size:2rem; display:block; margin-bottom:0.5rem;"></i>
+        No sequences yet. Create one to start tracking multi-touch outreach.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

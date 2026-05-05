@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ event.name }} — Stone{% endblock %}
+{% block page_title %}{{ event.name }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="/events" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-3">
+  <div class="col-auto">
+    <div class="stone-card" style="padding:0.875rem 1.25rem;">
+      <div style="font-size:0.7rem; color:#64748b; font-weight:600; text-transform:uppercase;">Date</div>
+      <div style="font-weight:600;">{{ event.event_date.strftime('%B %-d, %Y') }}</div>
+    </div>
+  </div>
+  {% if event.location %}
+  <div class="col-auto">
+    <div class="stone-card" style="padding:0.875rem 1.25rem;">
+      <div style="font-size:0.7rem; color:#64748b; font-weight:600; text-transform:uppercase;">Location</div>
+      <div style="font-weight:600;">{{ event.location }}</div>
+    </div>
+  </div>
+  {% endif %}
+  {% if event.website %}
+  <div class="col-auto">
+    <div class="stone-card" style="padding:0.875rem 1.25rem;">
+      <div style="font-size:0.7rem; color:#64748b; font-weight:600; text-transform:uppercase;">Website</div>
+      <a href="{{ event.website }}" target="_blank" style="font-weight:600;">Visit <i class="bi bi-arrow-up-right"></i></a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <!-- Add prospect + import -->
+  <div class="col-md-4">
+    <div class="stone-card mb-3">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;">Add Prospect</div>
+      <form method="post" action="/events/{{ event.id }}/add-prospect">
+        <div class="mb-2">
+          <select name="prospect_id" class="form-select form-select-sm">
+            <option value="">Select prospect…</option>
+            {% for p in available_prospects %}
+            <option value="{{ p.id }}">{{ p.company_name }}{% if p.contact_name %} — {{ p.contact_name }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">Add</button>
+      </form>
+    </div>
+
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.5rem;">Import Attendee List</div>
+      <p style="font-size:0.78rem; color:#64748b;">Upload a CSV of attendees. New contacts will be added as prospects.</p>
+      <form method="post" action="/events/{{ event.id }}/import-attendees" enctype="multipart/form-data">
+        <div class="mb-2">
+          <input type="file" name="file" accept=".csv" class="form-control form-control-sm" required>
+        </div>
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100">Import</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Prospect list -->
+  <div class="col-md-8">
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.875rem;">
+        Prospects ({{ links|length }})
+      </div>
+      {% if links %}
+      <div class="table-responsive">
+        <table class="table stone-table mb-0">
+          <thead>
+            <tr>
+              <th class="ps-0">Company</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for link in links %}
+            <tr>
+              <td class="ps-0">
+                <a href="/prospects/{{ link.prospect.id }}" style="font-weight:600; color:#0f172a; text-decoration:none; font-size:0.875rem;">
+                  {{ link.prospect.company_name }}
+                </a>
+              </td>
+              <td style="font-size:0.8rem;">{{ link.prospect.contact_name or '—' }}</td>
+              <td>
+                <form method="post" action="/events/{{ event.id }}/prospects/{{ link.id }}/update" class="d-flex gap-1 align-items-center">
+                  <select name="status" class="form-select form-select-sm" style="font-size:0.72rem; padding:2px 6px;" onchange="this.form.submit()">
+                    {% for s in attendee_statuses %}
+                    <option value="{{ s }}" {% if link.status == s %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              </td>
+              <td style="font-size:0.78rem; color:#64748b; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                {{ link.notes or '—' }}
+              </td>
+              <td>
+                <a href="/prospects/{{ link.prospect.id }}" class="btn btn-sm btn-outline-secondary py-0" style="font-size:0.7rem;">Open</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div style="color:#94a3b8; font-size:0.875rem;">No prospects added yet. Add from your list or import an attendee CSV.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

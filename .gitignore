@@ -1,3 +1,10 @@
 .env
 node_modules/
 *.env
+__pycache__/
+*.pyc
+*.pyo
+stone.db
+data/gmail_token.json
+data/uploads/
+.DS_Store

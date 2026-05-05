@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Discover Prospects — Stone{% endblock %}
+{% block page_title %}AI Prospect Discovery{% endblock %}
+
+{% block topbar_actions %}
+  <a href="/intelligence" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back to Intelligence</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="stone-card mb-3">
+  <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.5rem;">
+    <i class="bi bi-search me-1" style="color:#0ea5e9;"></i>Find New Prospects
+  </div>
+  <p style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;">
+    Claude searches the web for independent home healthcare agencies matching your criteria. Add promising ones to your prospect list with one click.
+  </p>
+  <form method="post" class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label" style="font-size:0.75rem; font-weight:600;">State (optional)</label>
+      <input type="text" name="state" class="form-control form-control-sm" placeholder="e.g. Texas, Florida"
+             value="{{ criteria.state if criteria else '' }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" style="font-size:0.75rem; font-weight:600;">Additional criteria (optional)</label>
+      <input type="text" name="criteria" class="form-control form-control-sm"
+             placeholder="e.g. founder retiring, recent expansion, pediatric specialty"
+             value="{{ criteria.criteria if criteria else '' }}">
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary btn-sm w-100">
+        <i class="bi bi-stars me-1"></i>Search
+      </button>
+    </div>
+  </form>
+</div>
+
+{% if results is not none %}
+  {% if results %}
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;">{{ results|length }} Companies Found</div>
+      <div class="table-responsive">
+        <table class="table stone-table mb-0">
+          <thead>
+            <tr>
+              <th class="ps-0">Company</th>
+              <th>Location</th>
+              <th>Revenue</th>
+              <th>Why They Fit</th>
+              <th>Source</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in results %}
+            <tr>
+              <td class="ps-0" style="font-weight:600;">{{ r.company_name }}</td>
+              <td style="font-size:0.8rem;">{{ r.city or '' }}{% if r.state %}, {{ r.state }}{% endif %}</td>
+              <td style="font-size:0.8rem;">{{ r.revenue_estimate or '—' }}</td>
+              <td style="font-size:0.78rem; color:#475569; max-width:300px;">
+                {% if r.fit_signals is iterable and r.fit_signals is not string %}
+                  {{ r.fit_signals|join('; ') }}
+                {% else %}
+                  {{ r.fit_signals or '—' }}
+                {% endif %}
+              </td>
+              <td>
+                {% if r.source_url %}
+                <a href="{{ r.source_url }}" target="_blank" style="font-size:0.75rem;">Link <i class="bi bi-arrow-up-right"></i></a>
+                {% endif %}
+              </td>
+              <td>
+                <form method="post" action="/intelligence/discover/import" style="display:inline;">
+                  <input type="hidden" name="company_name" value="{{ r.company_name }}">
+                  <input type="hidden" name="city" value="{{ r.city or '' }}">
+                  <input type="hidden" name="state" value="{{ r.state or '' }}">
+                  <input type="hidden" name="fit_signals" value="{{ r.fit_signals if r.fit_signals is string else r.fit_signals|join('; ') if r.fit_signals else '' }}">
+                  <button type="submit" class="btn btn-sm btn-outline-primary py-0" style="font-size:0.72rem;">+ Add</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="stone-card text-center py-4" style="color:#94a3b8;">
+      No matches found. Try broader criteria.
+    </div>
+  {% endif %}
+{% endif %}
+
+{% endblock %}

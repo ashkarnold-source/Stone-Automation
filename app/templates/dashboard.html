@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Stone{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  <span style="font-size:0.8rem; color:#64748b;">{{ today.strftime('%A, %B %-d') }}</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stone-card stat-card">
+      <div class="stat-value">{{ total_prospects }}</div>
+      <div class="stat-label">Total Prospects</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stone-card stat-card">
+      <div class="stat-value">{{ pipeline.get('engaged', 0) + pipeline.get('proposal', 0) }}</div>
+      <div class="stat-label">Active Conversations</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stone-card stat-card">
+      <div class="stat-value">{{ active_sequences }}</div>
+      <div class="stat-label">In Sequences</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stone-card stat-card">
+      <div class="stat-value {% if queue.total > 0 %}text-warning{% endif %}">{{ queue.total }}</div>
+      <div class="stat-label">Due Today</div>
+    </div>
+  </div>
+</div>
+
+<!-- Pipeline -->
+<div class="stone-card mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div style="font-weight:600; font-size:0.875rem;">Pipeline</div>
+    <a href="/prospects" style="font-size:0.8rem; color:#0ea5e9; text-decoration:none;">View all <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="pipeline-bar">
+    {% for stage in ['identified','contacted','engaged','proposal','closed_won'] %}
+    <a href="/prospects?status={{ stage }}" class="pipeline-stage stage-{{ stage }}">
+      <span class="stage-count">{{ pipeline.get(stage, 0) }}</span>
+      <span class="stage-label">{{ stage_labels[stage] }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Today's Queue -->
+  <div class="col-md-6">
+    <div class="stone-card h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div style="font-weight:600; font-size:0.875rem;">
+          Today's Queue
+          {% if queue.total > 0 %}
+          <span class="badge bg-warning text-dark ms-1" style="font-size:0.7rem;">{{ queue.total }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% set channel_icons = {'email': 'envelope', 'linkedin': 'linkedin', 'phone': 'telephone'} %}
+      {% set all_items = queue.email + queue.linkedin + queue.phone %}
+
+      {% if all_items %}
+        {% for item in all_items[:8] %}
+        <div class="queue-item">
+          <div class="queue-channel-badge badge-{{ item.step.channel }}">
+            <i class="bi bi-{{ channel_icons.get(item.step.channel, 'circle') }}"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="queue-company">
+              <a href="/prospects/{{ item.prospect.id }}" style="color:inherit; text-decoration:none;">
+                {{ item.prospect.company_name }}
+              </a>
+            </div>
+            <div class="queue-contact">{{ item.prospect.contact_name or '—' }} · Step {{ item.step.step_number }}</div>
+          </div>
+          {% if item.days_overdue > 0 %}
+          <div class="queue-overdue">{{ item.days_overdue }}d overdue</div>
+          {% endif %}
+          <a href="/prospects/{{ item.prospect.id }}" class="btn btn-sm btn-outline-secondary py-0" style="font-size:0.72rem;">Go</a>
+        </div>
+        {% endfor %}
+        {% if all_items|length > 8 %}
+        <div style="font-size:0.78rem; color:#64748b; padding-top:0.5rem;">
+          +{{ all_items|length - 8 }} more items
+        </div>
+        {% endif %}
+      {% else %}
+        <div style="color:#94a3b8; font-size:0.875rem; text-align:center; padding: 2rem 0;">
+          <i class="bi bi-check-circle" style="font-size:1.5rem; display:block; margin-bottom:0.5rem;"></i>
+          All caught up for today
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div class="col-md-6">
+
+    <!-- Upcoming Events -->
+    {% if upcoming_events %}
+    <div class="stone-card mb-3">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;">Upcoming Events</div>
+      {% for event in upcoming_events %}
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div style="background:#ede9fe; color:#7c3aed; border-radius:6px; padding:4px 8px; font-size:0.7rem; font-weight:600; white-space:nowrap;">
+          {{ event.event_date.strftime('%b %-d') }}
+        </div>
+        <div>
+          <a href="/events/{{ event.id }}" style="font-size:0.875rem; font-weight:500; color:#0f172a; text-decoration:none;">{{ event.name }}</a>
+          {% if event.location %}
+          <div style="font-size:0.75rem; color:#64748b;">{{ event.location }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+      <a href="/events" style="font-size:0.78rem; color:#0ea5e9; text-decoration:none;">All events <i class="bi bi-arrow-right"></i></a>
+    </div>
+    {% endif %}
+
+    <!-- Recent Activity -->
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;">Recent Activity</div>
+      {% set channel_colors = {'email':'badge-email','linkedin':'badge-linkedin','phone':'badge-phone','event':'bg-light','note':'bg-light'} %}
+      {% if recent_activities %}
+        {% for act in recent_activities[:6] %}
+        <div class="activity-item">
+          <div class="activity-icon {{ channel_colors.get(act.channel, 'bg-light') }}" style="font-size:0.75rem;">
+            <i class="bi bi-{{ {'email':'envelope','linkedin':'linkedin','phone':'telephone','event':'calendar','note':'pencil'}.get(act.channel, 'circle') }}"></i>
+          </div>
+          <div class="activity-content">
+            <a href="/prospects/{{ act.prospect_id }}" style="font-size:0.8rem; font-weight:500; color:#0f172a; text-decoration:none;">
+              {{ act.prospect.company_name if act.prospect else '—' }}
+            </a>
+            <div class="activity-meta">
+              {{ act.channel }} · {{ act.activity_date.strftime('%b %-d') }}
+              {% if act.outcome %} · {{ act.outcome.replace('_',' ') }}{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="color:#94a3b8; font-size:0.875rem;">No recent activity. Log your first touch.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Automation Status -->
+<div class="stone-card mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div style="font-weight:600; font-size:0.875rem;">
+      <i class="bi bi-robot me-1" style="color:#0ea5e9;"></i>Automation
+    </div>
+    {% if gmail_connected %}
+      <span class="badge bg-success" style="font-size:0.7rem;">Gmail Connected</span>
+    {% else %}
+      <a href="/auth/gmail" class="badge bg-warning text-dark" style="font-size:0.7rem; text-decoration:none;">Connect Gmail to activate</a>
+    {% endif %}
+  </div>
+  <div class="row g-2">
+    <div class="col-md-4">
+      <div style="background:#f8fafc; border-radius:8px; padding:0.875rem;">
+        <div style="font-size:0.75rem; font-weight:600; color:#0f172a;">Email Sequences</div>
+        <div style="font-size:0.72rem; color:#64748b;">Runs daily at 8am · auto-sends due emails</div>
+        <div style="font-size:0.72rem; color:#94a3b8; margin-top:4px;">
+          Last: {{ job_status.email_sequences.last_run or 'Never' }}<br>
+          {{ job_status.email_sequences.last_result }}
+        </div>
+        <form method="post" action="/scheduler/run-emails" class="mt-2">
+          <button class="btn btn-sm btn-outline-primary py-0" style="font-size:0.72rem;">Run now</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div style="background:#f8fafc; border-radius:8px; padding:0.875rem;">
+        <div style="font-size:0.75rem; font-weight:600; color:#0f172a;">Reply Detection</div>
+        <div style="font-size:0.72rem; color:#64748b;">Runs hourly · auto-advances pipeline on replies</div>
+        <div style="font-size:0.72rem; color:#94a3b8; margin-top:4px;">
+          Last: {{ job_status.reply_check.last_run or 'Never' }}<br>
+          {{ job_status.reply_check.last_result }}
+        </div>
+        <form method="post" action="/scheduler/run-replies" class="mt-2">
+          <button class="btn btn-sm btn-outline-primary py-0" style="font-size:0.72rem;">Run now</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div style="background:#f8fafc; border-radius:8px; padding:0.875rem;">
+        <div style="font-size:0.75rem; font-weight:600; color:#0f172a;">Morning Digest</div>
+        <div style="font-size:0.72rem; color:#64748b;">Runs at 7am · emails pipeline summary to you</div>
+        <div style="font-size:0.72rem; color:#94a3b8; margin-top:4px;">
+          Last: {{ job_status.morning_digest.last_run or 'Never' }}<br>
+          {{ job_status.morning_digest.last_result }}
+        </div>
+        <form method="post" action="/scheduler/run-digest" class="mt-2">
+          <button class="btn btn-sm btn-outline-primary py-0" style="font-size:0.72rem;">Run now</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

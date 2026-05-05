@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Intelligence — Stone{% endblock %}
+{% block page_title %}Industry Intelligence{% endblock %}
+
+{% block topbar_actions %}
+  <a href="/intelligence/discover" class="btn btn-sm btn-outline-primary me-2"><i class="bi bi-search me-1"></i>Discover Prospects</a>
+  <form method="post" action="/intelligence/scan" style="display:inline;">
+    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-arrow-clockwise me-1"></i>Run New Scan</button>
+  </form>
+{% endblock %}
+
+{% block content %}
+
+{% if request.query_params.get('running') %}
+<div class="alert alert-info" style="font-size:0.875rem;">
+  <i class="bi bi-hourglass-split me-1"></i>
+  Scan running in background — uses Claude with web search. Refresh in 60–90 seconds to see results.
+</div>
+{% endif %}
+
+{% if not report %}
+<div class="stone-card text-center py-5" style="color:#94a3b8;">
+  <i class="bi bi-graph-up-arrow" style="font-size:2.5rem; display:block; margin-bottom:0.5rem; color:#0ea5e9;"></i>
+  <div style="font-weight:600; color:#0f172a;">No reports yet</div>
+  <p style="font-size:0.875rem; max-width:480px; margin:0.75rem auto;">
+    Click <strong>Run New Scan</strong> to research home healthcare market trends, regulatory changes, PE activity, and AI developments. Reports are scheduled to run automatically every Monday at 6am.
+  </p>
+</div>
+
+{% else %}
+
+<!-- Executive Summary -->
+<div class="stone-card mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <div style="font-weight:700; font-size:1rem;">Executive Summary</div>
+      <div style="font-size:0.75rem; color:#64748b;">Week of {{ report.week_of.strftime('%B %-d, %Y') }}</div>
+    </div>
+    <span class="badge bg-info text-dark" style="font-size:0.7rem;"><i class="bi bi-stars me-1"></i>AI + Web Research</span>
+  </div>
+  <ul style="font-size:0.9rem; padding-left:1.25rem;">
+    {% for bullet in report.executive_summary %}
+    <li style="margin-bottom:0.5rem;">{{ bullet }}</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="row g-3">
+
+  <!-- Urgency Signals -->
+  {% if report.urgency_signals %}
+  <div class="col-md-6">
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem; color:#dc2626;">
+        <i class="bi bi-exclamation-triangle me-1"></i>Urgency Signals
+      </div>
+      <p style="font-size:0.78rem; color:#64748b; margin-bottom:0.75rem;">Why agency owners should evaluate equity options now:</p>
+      <ul style="font-size:0.85rem; padding-left:1.25rem;">
+        {% for signal in report.urgency_signals %}
+        <li style="margin-bottom:0.5rem;">{{ signal }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Top Urgent Prospects -->
+  {% if top_insights %}
+  <div class="col-md-6">
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem; color:#7c3aed;">
+        <i class="bi bi-fire me-1"></i>Highest-Urgency Prospects
+      </div>
+      {% for item in top_insights %}
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.7rem;">{{ item.insight.urgency_score }}/10</span>
+        <a href="/prospects/{{ item.prospect.id }}" style="font-size:0.85rem; font-weight:500; color:#0f172a; text-decoration:none;">
+          {{ item.prospect.company_name }}
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Regulatory -->
+  {% if report.regulatory %}
+  <div class="col-12">
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;"><i class="bi bi-file-text me-1"></i>Regulatory & Reimbursement</div>
+      {% for item in report.regulatory %}
+      <div style="border-left:3px solid #fbbf24; padding-left:0.75rem; margin-bottom:0.875rem;">
+        <div style="font-weight:600; font-size:0.85rem;">{{ item.headline }}</div>
+        <div style="font-size:0.8rem; color:#475569; margin-top:0.25rem;">{{ item.summary }}</div>
+        {% if item.impact %}<div style="font-size:0.78rem; color:#7c3aed; margin-top:0.25rem;"><strong>Impact:</strong> {{ item.impact }}</div>{% endif %}
+        {% if item.source_url %}<a href="{{ item.source_url }}" target="_blank" style="font-size:0.72rem;">Source <i class="bi bi-arrow-up-right"></i></a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- PE Activity -->
+  {% if report.pe_activity %}
+  <div class="col-12">
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;"><i class="bi bi-cash-coin me-1"></i>PE & M&A Activity</div>
+      {% for item in report.pe_activity %}
+      <div style="border-left:3px solid #10b981; padding-left:0.75rem; margin-bottom:0.875rem;">
+        <div style="font-weight:600; font-size:0.85rem;">{{ item.headline }}</div>
+        <div style="font-size:0.8rem; color:#475569; margin-top:0.25rem;">{{ item.summary }}</div>
+        {% if item.impact %}<div style="font-size:0.78rem; color:#7c3aed; margin-top:0.25rem;"><strong>Impact:</strong> {{ item.impact }}</div>{% endif %}
+        {% if item.source_url %}<a href="{{ item.source_url }}" target="_blank" style="font-size:0.72rem;">Source <i class="bi bi-arrow-up-right"></i></a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Trends -->
+  {% if report.trends %}
+  <div class="col-md-6">
+    <div class="stone-card h-100">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;"><i class="bi bi-graph-up me-1"></i>Market Trends</div>
+      {% for item in report.trends %}
+      <div style="margin-bottom:0.875rem;">
+        <div style="font-weight:600; font-size:0.85rem;">{{ item.trend }}</div>
+        <div style="font-size:0.78rem; color:#64748b; margin-top:0.2rem;">{{ item.evidence }}</div>
+        {% if item.implication %}<div style="font-size:0.78rem; color:#0ea5e9; margin-top:0.2rem;">→ {{ item.implication }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- AI Developments -->
+  {% if report.ai_developments %}
+  <div class="col-md-6">
+    <div class="stone-card h-100">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;"><i class="bi bi-cpu me-1"></i>AI in Home Health</div>
+      {% for item in report.ai_developments %}
+      <div style="margin-bottom:0.875rem;">
+        <div style="font-weight:600; font-size:0.85rem;">{{ item.topic }}</div>
+        <div style="font-size:0.78rem; color:#64748b; margin-top:0.2rem;">{{ item.summary }}</div>
+        {% if item.source_url %}<a href="{{ item.source_url }}" target="_blank" style="font-size:0.72rem;">Source <i class="bi bi-arrow-up-right"></i></a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+
+{% endblock %}

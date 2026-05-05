@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Prospects — Stone{% endblock %}
+{% block page_title %}Prospects ({{ prospects|length }} of {{ total }}){% endblock %}
+
+{% block topbar_actions %}
+  <a href="/prospects/import" class="btn btn-primary btn-sm"><i class="bi bi-upload me-1"></i>Import CSV</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filters -->
+<div class="stone-card mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-12 col-md-3">
+      <input type="text" name="q" class="form-control form-control-sm" placeholder="Search company or contact…" value="{{ filters.q or '' }}">
+    </div>
+    <div class="col-6 col-md-2">
+      <select name="status" class="form-select form-select-sm">
+        <option value="">All stages</option>
+        {% for s in statuses %}
+        <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select name="ownership" class="form-select form-select-sm">
+        <option value="">All ownership</option>
+        {% for o in ownership_types %}
+        <option value="{{ o }}" {% if filters.ownership == o %}selected{% endif %}>{{ o.replace('_',' ').title() }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select name="state" class="form-select form-select-sm">
+        <option value="">All states</option>
+        {% for st in states %}
+        <option value="{{ st }}" {% if filters.state == st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select name="revenue" class="form-select form-select-sm">
+        <option value="">All revenue</option>
+        <option value="5m_10m" {% if filters.revenue == '5m_10m' %}selected{% endif %}>$5M–$10M</option>
+        <option value="10m_25m" {% if filters.revenue == '10m_25m' %}selected{% endif %}>$10M–$25M</option>
+        <option value="25m_plus" {% if filters.revenue == '25m_plus' %}selected{% endif %}>$25M+</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-1">
+      <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="stone-card p-0">
+  <div class="table-responsive">
+    <table class="table stone-table mb-0">
+      <thead>
+        <tr>
+          <th class="ps-3">Company</th>
+          <th>Contact</th>
+          <th>Ownership</th>
+          <th>Revenue</th>
+          <th>State</th>
+          <th>Stage</th>
+          <th>Added</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in prospects %}
+        <tr>
+          <td class="ps-3">
+            <a href="/prospects/{{ p.id }}" style="font-weight:600; color:#0f172a; text-decoration:none;">{{ p.company_name }}</a>
+          </td>
+          <td>
+            <div style="font-size:0.875rem;">{{ p.contact_name or '—' }}</div>
+            {% if p.title %}<div style="font-size:0.75rem; color:#64748b;">{{ p.title }}</div>{% endif %}
+          </td>
+          <td>
+            {% if p.ownership_type %}
+            <span class="status-badge {% if p.ownership_type == 'pe_backed' %}status-proposal{% else %}status-identified{% endif %}">
+              {{ p.ownership_type.replace('_',' ').title() }}
+            </span>
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:0.8rem;">
+            {{ {'under_5m':'<$5M','5m_10m':'$5–10M','10m_25m':'$10–25M','25m_plus':'$25M+'}.get(p.revenue_tier, '—') }}
+          </td>
+          <td style="font-size:0.8rem;">{{ p.state or '—' }}</td>
+          <td><span class="status-badge status-{{ p.status }}">{{ p.status.replace('_',' ').title() }}</span></td>
+          <td style="font-size:0.75rem; color:#94a3b8;">{{ p.created_at.strftime('%b %-d') }}</td>
+          <td><a href="/prospects/{{ p.id }}" class="btn btn-sm btn-outline-secondary py-0" style="font-size:0.72rem;">Open</a></td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center py-5" style="color:#94a3b8;">
+            No prospects found.
+            <a href="/prospects/import">Import a CSV</a> to get started.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

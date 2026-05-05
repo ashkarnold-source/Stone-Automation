@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block title %}{{ prospect.company_name }} — Stone{% endblock %}
+{% block page_title %}{{ prospect.company_name }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="/prospects" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3">
+
+  <!-- Left: Profile + Update -->
+  <div class="col-md-4">
+    <div class="stone-card mb-3">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <div style="font-size:1.1rem; font-weight:700;">{{ prospect.company_name }}</div>
+          {% if prospect.contact_name %}
+          <div style="color:#64748b; font-size:0.875rem;">{{ prospect.contact_name }}{% if prospect.title %} · {{ prospect.title }}{% endif %}</div>
+          {% endif %}
+        </div>
+        <span class="status-badge status-{{ prospect.status }}">{{ prospect.status.replace('_',' ').title() }}</span>
+      </div>
+
+      <div class="row g-2 mb-3" style="font-size:0.8rem;">
+        {% if prospect.email %}
+        <div class="col-12"><i class="bi bi-envelope text-muted me-1"></i><a href="mailto:{{ prospect.email }}">{{ prospect.email }}</a></div>
+        {% endif %}
+        {% if prospect.phone %}
+        <div class="col-12"><i class="bi bi-telephone text-muted me-1"></i>{{ prospect.phone }}</div>
+        {% endif %}
+        {% if prospect.linkedin_url %}
+        <div class="col-12"><i class="bi bi-linkedin text-muted me-1"></i><a href="{{ prospect.linkedin_url }}" target="_blank">LinkedIn</a></div>
+        {% endif %}
+        {% if prospect.city or prospect.state %}
+        <div class="col-12"><i class="bi bi-geo-alt text-muted me-1"></i>{{ [prospect.city, prospect.state]|select|join(', ') }}</div>
+        {% endif %}
+        {% if prospect.ownership_type %}
+        <div class="col-12"><i class="bi bi-building text-muted me-1"></i>{{ prospect.ownership_type.replace('_',' ').title() }}</div>
+        {% endif %}
+        {% if prospect.revenue_tier %}
+        <div class="col-12"><i class="bi bi-graph-up text-muted me-1"></i>{{ {'under_5m':'<$5M','5m_10m':'$5–10M','10m_25m':'$10–25M','25m_plus':'$25M+'}.get(prospect.revenue_tier,'—') }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Update status / notes -->
+      <form method="post" action="/prospects/{{ prospect.id }}/update">
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Stage</label>
+          <select name="status" class="form-select form-select-sm">
+            {% for s in statuses %}
+            <option value="{{ s }}" {% if prospect.status == s %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Notes</label>
+          <textarea name="notes" class="form-control form-control-sm" rows="3" style="font-size:0.8rem;">{{ prospect.notes or '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">Save</button>
+      </form>
+    </div>
+
+    <!-- Sequence enrollment -->
+    <div class="stone-card mb-3">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;">Sequence</div>
+      {% if enrollment %}
+        <div style="font-size:0.8rem;">
+          <span class="badge bg-success">Active</span>
+          {{ enrollment.sequence.name }}<br>
+          <span style="color:#64748b;">Step {{ enrollment.current_step }} · Next: {{ enrollment.next_action_date }}</span>
+        </div>
+      {% else %}
+        <form method="post" action="/sequences/{{ sequences[0].id if sequences else 0 }}/enroll" class="d-flex gap-2 align-items-end flex-wrap">
+          <input type="hidden" name="prospect_id" value="{{ prospect.id }}">
+          <div class="flex-grow-1">
+            <select name="" id="seq-select" class="form-select form-select-sm" onchange="this.form.action='/sequences/'+this.value+'/enroll'">
+              <option value="">Select sequence…</option>
+              {% for seq in sequences %}
+              <option value="{{ seq.id }}">{{ seq.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" {% if not sequences %}disabled{% endif %}>Enroll</button>
+        </form>
+        {% if not sequences %}
+        <div style="font-size:0.75rem; color:#94a3b8; margin-top:0.5rem;">
+          <a href="/sequences">Create a sequence first</a>
+        </div>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- AI Brief -->
+    <div class="ai-panel mb-3">
+      <div class="ai-label mb-2"><i class="bi bi-stars me-1"></i>AI Call Brief</div>
+      <div id="brief-content" style="font-size:0.8rem; color:#475569; min-height:40px;">Click to generate</div>
+      <button class="btn btn-sm mt-2" style="background:#0ea5e9; color:#fff; font-size:0.75rem;" onclick="loadBrief()">
+        Generate Brief
+      </button>
+    </div>
+
+    <!-- Live Intelligence -->
+    <div class="ai-panel" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-color:#fbbf24;">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="ai-label" style="color:#b45309;">
+          <i class="bi bi-globe me-1"></i>Live Intelligence
+        </div>
+        {% if latest_insight %}
+        <span class="badge" style="background:#dc2626; color:#fff; font-size:0.7rem;">
+          Urgency: {{ latest_insight.urgency_score }}/10
+        </span>
+        {% endif %}
+      </div>
+      {% if latest_insight %}
+        <div style="font-size:0.78rem; color:#78350f; margin-bottom:0.5rem;">
+          <strong>Summary:</strong> {{ latest_insight.summary }}
+        </div>
+        {% if latest_insight.outreach_angle %}
+        <div style="font-size:0.78rem; color:#78350f; margin-bottom:0.5rem; padding:0.5rem; background:rgba(255,255,255,0.5); border-radius:6px;">
+          <strong>Outreach angle:</strong> {{ latest_insight.outreach_angle }}
+        </div>
+        {% endif %}
+        {% if insight_signals %}
+        <div style="font-size:0.75rem; color:#78350f;">
+          <strong>Signals:</strong>
+          <ul style="padding-left:1rem; margin:0.25rem 0 0;">
+            {% for s in insight_signals[:5] %}
+            <li>
+              {{ s.headline }}
+              {% if s.source_url %}<a href="{{ s.source_url }}" target="_blank" style="font-size:0.7rem; color:#92400e;">↗</a>{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        <div style="font-size:0.7rem; color:#92400e; margin-top:0.5rem;">
+          Researched {{ latest_insight.created_at.strftime('%b %-d') }}
+        </div>
+      {% else %}
+        <div style="font-size:0.78rem; color:#78350f;">
+          No research yet. Click below to use Claude + web search to find recent news, signals, and the best outreach angle for this company.
+        </div>
+      {% endif %}
+      <form method="post" action="/intelligence/research/{{ prospect.id }}" class="mt-2">
+        <button type="submit" class="btn btn-sm" style="background:#b45309; color:#fff; font-size:0.75rem;">
+          <i class="bi bi-search me-1"></i>{% if latest_insight %}Refresh Research{% else %}Research Now{% endif %}
+        </button>
+      </form>
+      {% if request.query_params.get('researching') %}
+      <div style="font-size:0.72rem; color:#78350f; margin-top:0.5rem;">
+        <i class="bi bi-hourglass-split me-1"></i>Research running — refresh in 30 seconds.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: Log touch + activity history + email composer -->
+  <div class="col-md-8">
+
+    <!-- Log Activity -->
+    <div class="stone-card mb-3">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.875rem;">Log Activity</div>
+      <form method="post" action="/activities/log">
+        <input type="hidden" name="prospect_id" value="{{ prospect.id }}">
+        <div class="row g-2 mb-2">
+          <div class="col-6 col-md-3">
+            <label class="form-label" style="font-size:0.75rem; font-weight:600;">Channel</label>
+            <select name="channel" class="form-select form-select-sm">
+              <option value="phone">Phone</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="email">Email</option>
+              <option value="event">Event</option>
+              <option value="note">Note</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label" style="font-size:0.75rem; font-weight:600;">Outcome</label>
+            <select name="outcome" class="form-select form-select-sm">
+              <option value="no_response">No response</option>
+              <option value="voicemail">Voicemail</option>
+              <option value="left_message">Left message</option>
+              <option value="replied">Replied</option>
+              <option value="call_booked">Call booked</option>
+              <option value="not_interested">Not interested</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" style="font-size:0.75rem; font-weight:600;">Subject / Notes</label>
+            <input type="text" name="subject" class="form-control form-control-sm" placeholder="Brief note…">
+          </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <div class="form-check" style="font-size:0.8rem;">
+            <input class="form-check-input" type="checkbox" name="advance_sequence" value="1" id="advanceSeq">
+            <label class="form-check-label" for="advanceSeq">Advance sequence</label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm ms-auto">Log</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Email Composer -->
+    {% if prospect.email %}
+    <div class="stone-card mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div style="font-weight:600; font-size:0.875rem;">Send Email</div>
+        <button class="btn btn-sm" style="background:#e0f2fe; color:#0369a1; font-size:0.75rem;" onclick="loadEmailDraft()">
+          <i class="bi bi-stars me-1"></i>AI Draft
+        </button>
+      </div>
+      <form method="post" action="/activities/send-email">
+        <input type="hidden" name="prospect_id" value="{{ prospect.id }}">
+        <div class="mb-2">
+          <input type="text" name="subject" id="email-subject" class="form-control form-control-sm" placeholder="Subject…">
+        </div>
+        <div class="mb-2">
+          <textarea name="body" id="email-body" class="form-control form-control-sm" rows="5" placeholder="Email body…"></textarea>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span style="font-size:0.75rem; color:#94a3b8;">To: {{ prospect.email }}</span>
+          <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-send me-1"></i>Send</button>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Activity Timeline -->
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.875rem;">Activity History</div>
+      {% if activities %}
+        {% set channel_icons = {'email':'envelope','linkedin':'linkedin','phone':'telephone','event':'calendar','note':'pencil'} %}
+        {% set channel_badge = {'email':'badge-email','linkedin':'badge-linkedin','phone':'badge-phone','event':'bg-light text-secondary','note':'bg-light text-secondary'} %}
+        {% for act in activities %}
+        <div class="activity-item">
+          <div class="activity-icon {{ channel_badge.get(act.channel, 'bg-light') }}">
+            <i class="bi bi-{{ channel_icons.get(act.channel, 'circle') }}"></i>
+          </div>
+          <div class="activity-content">
+            <div style="font-size:0.8rem; font-weight:500;">
+              {{ act.channel.title() }}
+              {% if act.subject %} — {{ act.subject }}{% endif %}
+            </div>
+            {% if act.body %}
+            <div style="font-size:0.78rem; color:#475569; white-space:pre-wrap;">{{ act.body }}</div>
+            {% endif %}
+            <div class="activity-meta">
+              {{ act.activity_date.strftime('%b %-d, %Y %-I:%M %p') }}
+              {% if act.outcome %} · <span style="font-weight:500;">{{ act.outcome.replace('_',' ') }}</span>{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="color:#94a3b8; font-size:0.875rem;">No activity logged yet.</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadBrief() {
+  const el = document.getElementById('brief-content');
+  el.textContent = 'Generating…';
+  const res = await fetch('/prospects/{{ prospect.id }}/brief');
+  const data = await res.json();
+  el.style.whiteSpace = 'pre-wrap';
+  el.textContent = data.brief;
+}
+
+async function loadEmailDraft() {
+  const res = await fetch('/prospects/{{ prospect.id }}/draft-email');
+  const data = await res.json();
+  if (data.subject) document.getElementById('email-subject').value = data.subject;
+  if (data.body) document.getElementById('email-body').value = data.body;
+}
+</script>
+{% endblock %}

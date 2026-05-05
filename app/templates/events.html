@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Events — Stone{% endblock %}
+{% block page_title %}Events & Conferences{% endblock %}
+
+{% block content %}
+
+<div class="row g-3">
+  <!-- Create event -->
+  <div class="col-md-4">
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.875rem;">Add Event</div>
+      <form method="post" action="/events/create">
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Event Name</label>
+          <input type="text" name="name" class="form-control form-control-sm" placeholder="NAHC Annual Conference" required>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.75rem; font-weight:600;">Start Date</label>
+            <input type="date" name="event_date" class="form-control form-control-sm" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.75rem; font-weight:600;">End Date</label>
+            <input type="date" name="end_date" class="form-control form-control-sm">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Location</label>
+          <input type="text" name="location" class="form-control form-control-sm" placeholder="Nashville, TN">
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Type</label>
+          <select name="event_type" class="form-select form-select-sm">
+            <option value="">Select…</option>
+            {% for t in event_types %}
+            <option value="{{ t }}">{{ t.replace('_',' ').title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Website</label>
+          <input type="text" name="website" class="form-control form-control-sm" placeholder="https://…">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Notes</label>
+          <textarea name="notes" class="form-control form-control-sm" rows="2"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">Add Event</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <!-- Upcoming -->
+    <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;">Upcoming</div>
+    {% if upcoming %}
+      {% for event in upcoming %}
+      <div class="stone-card mb-2">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <a href="/events/{{ event.id }}" style="font-weight:600; color:#0f172a; text-decoration:none;">{{ event.name }}</a>
+            <div style="font-size:0.8rem; color:#64748b;">
+              {{ event.event_date.strftime('%B %-d') }}{% if event.end_date and event.end_date != event.event_date %} – {{ event.end_date.strftime('%B %-d, %Y') }}{% else %}, {{ event.event_date.year }}{% endif %}
+              {% if event.location %} · {{ event.location }}{% endif %}
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span style="font-size:0.75rem; color:#94a3b8;">{{ event.prospect_links|length }} prospects</span>
+            <a href="/events/{{ event.id }}" class="btn btn-sm btn-outline-secondary py-0" style="font-size:0.72rem;">Open</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="stone-card text-center py-4 mb-3" style="color:#94a3b8;">
+        <i class="bi bi-calendar-event" style="font-size:1.5rem; display:block; margin-bottom:0.5rem;"></i>
+        No upcoming events. Add conferences you're attending.
+      </div>
+    {% endif %}
+
+    {% if past %}
+    <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem; margin-top:1rem;">Past Events</div>
+    {% for event in past %}
+    <div class="stone-card mb-2" style="opacity:0.7;">
+      <div class="d-flex justify-content-between">
+        <div>
+          <a href="/events/{{ event.id }}" style="font-weight:500; color:#475569; text-decoration:none;">{{ event.name }}</a>
+          <div style="font-size:0.78rem; color:#94a3b8;">{{ event.event_date.strftime('%B %-d, %Y') }}{% if event.location %} · {{ event.location }}{% endif %}</div>
+        </div>
+        <a href="/events/{{ event.id }}" class="btn btn-sm btn-outline-secondary py-0" style="font-size:0.72rem;">View</a>
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Import CSV — Stone{% endblock %}
+{% block page_title %}Import Prospects{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-md-8">
+
+    {% if result %}
+      {% if result.success %}
+      <div class="alert alert-success">
+        <i class="bi bi-check-circle me-2"></i>
+        Import complete — <strong>{{ result.added }}</strong> prospects added, {{ result.skipped }} skipped (duplicates).
+      </div>
+      {% else %}
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-circle me-2"></i>
+        Import failed: {{ result.error }}
+      </div>
+      {% endif %}
+    {% endif %}
+
+    <div class="stone-card mb-3">
+      <div style="font-weight:600; font-size:1rem; margin-bottom:0.5rem;">Upload Prospect CSV</div>
+      <p style="font-size:0.875rem; color:#64748b; margin-bottom:1.25rem;">
+        Drop a CSV exported from LinkedIn Sales Navigator, Apollo, or any spreadsheet.
+        The system auto-maps common column names.
+      </p>
+
+      <form method="post" action="/prospects/import" enctype="multipart/form-data">
+        <div class="mb-3">
+          <input type="file" name="file" accept=".csv" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Import</button>
+      </form>
+    </div>
+
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.75rem;">Recognized Column Names</div>
+      <p style="font-size:0.8rem; color:#64748b; margin-bottom:0.75rem;">
+        Your CSV headers will be auto-mapped. Accepted variations:
+      </p>
+      <div class="row g-2" style="font-size:0.8rem;">
+        <div class="col-6">
+          <strong>Company</strong><br>
+          <span style="color:#64748b;">company, company_name, agency, agency_name, organization</span>
+        </div>
+        <div class="col-6">
+          <strong>Contact</strong><br>
+          <span style="color:#64748b;">name, contact_name, full_name, first_name + last_name</span>
+        </div>
+        <div class="col-6">
+          <strong>Email</strong><br>
+          <span style="color:#64748b;">email, email_address</span>
+        </div>
+        <div class="col-6">
+          <strong>Phone</strong><br>
+          <span style="color:#64748b;">phone, phone_number, mobile, cell</span>
+        </div>
+        <div class="col-6">
+          <strong>Revenue</strong><br>
+          <span style="color:#64748b;">revenue, annual_revenue — auto-bucketed into tiers</span>
+        </div>
+        <div class="col-6">
+          <strong>Ownership</strong><br>
+          <span style="color:#64748b;">ownership_type, type — maps "PE", "independent", etc.</span>
+        </div>
+        <div class="col-6">
+          <strong>Location</strong><br>
+          <span style="color:#64748b;">state, geography, region, city</span>
+        </div>
+        <div class="col-6">
+          <strong>LinkedIn</strong><br>
+          <span style="color:#64748b;">linkedin, linkedin_url, linkedin_profile</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

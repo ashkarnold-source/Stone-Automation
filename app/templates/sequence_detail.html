@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ sequence.name }} — Stone{% endblock %}
+{% block page_title %}{{ sequence.name }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="/sequences" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3">
+  <div class="col-md-5">
+    <div class="stone-card mb-3">
+      <div style="font-size:0.8rem; color:#64748b; margin-bottom:0.5rem;">{{ sequence.description or 'No description' }}</div>
+      <div style="font-size:0.8rem;"><strong>{{ active_count }}</strong> prospects actively enrolled</div>
+    </div>
+
+    <!-- Add step -->
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.875rem;">Add Step</div>
+      <form method="post" action="/sequences/{{ sequence.id }}/steps/add">
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Channel</label>
+          <select name="channel" class="form-select form-select-sm">
+            <option value="email">Email</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="phone">Phone</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Days after previous step</label>
+          <input type="number" name="delay_days" class="form-control form-control-sm" value="0" min="0">
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Subject template</label>
+          <input type="text" name="subject_template" class="form-control form-control-sm" placeholder="Quick question for {{company}}…">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600;">Body template</label>
+          <textarea name="body_template" class="form-control form-control-sm" rows="4"
+            placeholder="Hi {{contact_name}}, I help home health agencies like {{company}} think through equity positioning…"></textarea>
+          <div style="font-size:0.7rem; color:#94a3b8; margin-top:3px;">
+            Use {{company}}, {{contact_name}}, {{state}} as merge tags
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">Add Step</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="stone-card">
+      <div style="font-weight:600; font-size:0.875rem; margin-bottom:0.875rem;">Steps</div>
+      {% if sequence.steps %}
+        {% for step in sequence.steps %}
+        <div class="d-flex gap-3 mb-3 align-items-start">
+          <div style="width:28px; height:28px; border-radius:50%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem; flex-shrink:0;">
+            {{ step.step_number }}
+          </div>
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="status-badge channel-{{ step.channel }}">{{ step.channel }}</span>
+              <span style="font-size:0.78rem; color:#64748b;">
+                {% if step.step_number == 1 %}Day 0 (immediately){% else %}+{{ step.delay_days }} day{{ 's' if step.delay_days != 1 else '' }}{% endif %}
+              </span>
+            </div>
+            {% if step.subject_template %}
+            <div style="font-size:0.8rem; font-weight:500;">{{ step.subject_template }}</div>
+            {% endif %}
+            {% if step.body_template %}
+            <div style="font-size:0.78rem; color:#475569; white-space:pre-wrap; background:#f8fafc; border-radius:6px; padding:0.5rem 0.75rem; margin-top:0.25rem;">{{ step.body_template }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% if not loop.last %}
+        <div style="border-left:2px dashed #e2e8f0; height:16px; margin-left:14px; margin-bottom:0;"></div>
+        {% endif %}
+        {% endfor %}
+      {% else %}
+        <div style="color:#94a3b8; font-size:0.875rem;">No steps yet. Add your first touch above.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
